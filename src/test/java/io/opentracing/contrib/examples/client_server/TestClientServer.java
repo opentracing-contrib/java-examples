@@ -12,7 +12,7 @@ import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
 import io.opentracing.mock.MockTracer.Propagator;
 import io.opentracing.tag.Tags;
-import io.opentracing.util.ThreadLocalActiveSpanSource;
+import io.opentracing.util.ThreadLocalScopeManager;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -22,13 +22,13 @@ import org.junit.Test;
 
 public class TestClientServer {
 
-  private final MockTracer tracer = new MockTracer(new ThreadLocalActiveSpanSource(),
-      Propagator.TEXT_MAP);
+  private final MockTracer tracer = new MockTracer(Propagator.TEXT_MAP);
   private final ArrayBlockingQueue<Message> queue = new ArrayBlockingQueue<>(10);
   private Server server;
 
   @Before
   public void before() {
+    tracer.setScopeManager(new ThreadLocalScopeManager());
     server = new Server(queue, tracer);
     server.start();
   }
@@ -51,6 +51,6 @@ public class TestClientServer {
     assertEquals(finished.get(0).context().traceId(), finished.get(1).context().traceId());
     assertNotNull(getOneByTag(finished, Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT));
     assertNotNull(getOneByTag(finished, Tags.SPAN_KIND, Tags.SPAN_KIND_SERVER));
-    assertNull(tracer.activeSpan());
+    assertNull(tracer.scopeManager().active());
   }
 }

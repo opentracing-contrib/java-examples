@@ -1,7 +1,10 @@
 package io.opentracing.contrib.examples.activate_deactivate;
 
-import io.opentracing.ActiveSpan;
-import io.opentracing.ActiveSpan.Continuation;
+import io.opentracing.Scope;
+import io.opentracing.Scope.Observer;
+import io.opentracing.ScopeManager;
+import io.opentracing.Span;
+import io.opentracing.tag.Tags;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
@@ -17,10 +20,10 @@ public class Callback implements Runnable {
 
   private final Random random = new Random();
 
-  private final Continuation continuation;
+  private final Span continuation;
 
-  Callback(ActiveSpan activeSpan) {
-    continuation = activeSpan.capture();
+  Callback(Span activeSpan) {
+    continuation = activeSpan;
     logger.info("Callback created");
   }
 
@@ -31,8 +34,8 @@ public class Callback implements Runnable {
   @Override
   public void run() {
     logger.info("Callback started");
-    ActiveSpan activeSpan = continuation.activate();
 
+    Scope scope = continuation.activate(Observer.FINISH_ON_CLOSE);
     try {
       TimeUnit.SECONDS.sleep(1);
     } catch (InterruptedException e) {
@@ -42,7 +45,7 @@ public class Callback implements Runnable {
     // set random tag starting with 'test_tag_' to test that finished span has all of them
     activeSpan.setTag("test_tag_" + random.nextInt(), "random");
 
-    activeSpan.deactivate();
+    scope.close();
     logger.info("Callback finished");
   }
 }

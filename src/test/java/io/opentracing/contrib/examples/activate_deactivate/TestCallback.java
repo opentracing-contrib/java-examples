@@ -5,11 +5,13 @@ import static io.opentracing.contrib.examples.TestUtils.reportedSpansSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 
-import io.opentracing.ActiveSpan;
+import io.opentracing.Scope;
+import io.opentracing.Scope.Observer;
 import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
 import io.opentracing.mock.MockTracer.Propagator;
-import io.opentracing.util.ThreadLocalActiveSpanSource;
+import io.opentracing.tag.Tags;
+import io.opentracing.util.ThreadLocalScopeManager;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -24,12 +26,12 @@ public class TestCallback {
 
   private static final Logger logger = LoggerFactory.getLogger(TestCallback.class);
 
-  private final MockTracer tracer = new MockTracer(new ThreadLocalActiveSpanSource(),
-      Propagator.TEXT_MAP);
+  private final MockTracer tracer = new MockTracer(Propagator.TEXT_MAP);
   private final ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
 
   @Test
   public void test() throws Exception {
+    tracer.setScopeManager(new ThreadLocalScopeManager());
     Thread entryThread = entryThread();
     entryThread.start();
     entryThread.join(10_000);
@@ -78,12 +80,14 @@ public class TestCallback {
       @Override
       public void run() {
         logger.info("Entry thread started");
-        try (ActiveSpan activeSpan = tracer.buildSpan("parent").startActive()) {
-          Runnable callback = new Callback(activeSpan);
+
+        try (Scope scope = tracer.buildSpan("parent").startActive()) {
+          Runnable callback = new Callback(scope.span());
 
           // Callback is executed at some unpredictable time and we are not able to check status of the callback
           service.schedule(callback, 500, TimeUnit.MILLISECONDS);
         }
+
         logger.info("Entry thread finished");
       }
     });

@@ -9,7 +9,7 @@ import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
 import io.opentracing.mock.MockTracer.Propagator;
 import io.opentracing.tag.Tags;
-import io.opentracing.util.ThreadLocalActiveSpanSource;
+import io.opentracing.util.ThreadLocalScopeManager;
 import java.util.List;
 import org.junit.Test;
 
@@ -18,11 +18,11 @@ import org.junit.Test;
  */
 public class TestListener {
 
-  private final MockTracer tracer = new MockTracer(new ThreadLocalActiveSpanSource(),
-      Propagator.TEXT_MAP);
+  private final MockTracer tracer = new MockTracer(Propagator.TEXT_MAP);
 
   @Test
   public void test() throws Exception {
+    tracer.setScopeManager(new ThreadLocalScopeManager());
     Client client = new Client(tracer);
     Object response = client.send("message").get();
     assertEquals("message:response", response);
@@ -30,6 +30,6 @@ public class TestListener {
     List<MockSpan> finished = tracer.finishedSpans();
     assertEquals(1, finished.size());
     assertNotNull(getOneByTag(finished, Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT));
-    assertNull(tracer.activeSpan());
+    assertNull(tracer.scopeManager().active());
   }
 }
