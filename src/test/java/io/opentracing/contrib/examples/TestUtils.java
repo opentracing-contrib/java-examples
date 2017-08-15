@@ -36,4 +36,13 @@ public class TestUtils {
       Thread.currentThread().interrupt();
     }
   }
+
+  public static void sleep(long milliseconds) {
+    try {
+      TimeUnit.MILLISECONDS.sleep(milliseconds);
+    } catch (InterruptedException e) {
+        e.printStackTrace();
+        Thread.currentThread().interrupt();
+    }
+  }
 }
