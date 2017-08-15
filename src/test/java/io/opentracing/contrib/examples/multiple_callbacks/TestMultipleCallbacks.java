@@ -23,9 +23,9 @@ public class TestMultipleCallbacks {
   public void test() throws Exception {
     Client client = new Client(tracer);
     try (ActiveSpan span = tracer.buildSpan("parent").startActive()) {
-      client.send("task1", span, 100);
+      client.send("task1", span, 300);
       client.send("task2", span, 200);
-      client.send("task3", span, 300);
+      client.send("task3", span, 100);
     }
 
     await().atMost(15, TimeUnit.SECONDS).until(reportedSpansSize(tracer), equalTo(4));
