@@ -108,7 +108,7 @@ public class TestCallback {
           service.schedule(callback2, random.nextInt(1000) + 100, TimeUnit.MILLISECONDS);
 
         }
-        logger.info("Entry thread finished");
+        logger.info("Entry thread 2x finished");
       }
     });
   }
