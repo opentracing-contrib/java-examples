@@ -17,19 +17,13 @@ public class Client {
     this.tracer = tracer;
   }
 
-  public void send() {
+  public void send() throws InterruptedException {
     Message message = new Message();
 
-    ActiveSpan activeSpan = tracer.buildSpan("send").startActive();
-    activeSpan.setTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT);
-    tracer.inject(activeSpan.context(), Builtin.TEXT_MAP, new TextMapInjectAdapter(message));
-
-    try {
+    try (ActiveSpan activeSpan = tracer.buildSpan("send").startActive()) {
+      activeSpan.setTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT);
+      tracer.inject(activeSpan.context(), Builtin.TEXT_MAP, new TextMapInjectAdapter(message));
       queue.put(message);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    } finally {
-      activeSpan.deactivate();
     }
   }
 

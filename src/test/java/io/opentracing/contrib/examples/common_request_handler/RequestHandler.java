@@ -14,6 +14,8 @@ public class RequestHandler {
 
   private static final Logger logger = LoggerFactory.getLogger(RequestHandler.class);
 
+  static final String OPERATION_NAME = "send";
+
   private final Tracer tracer;
 
   public RequestHandler(Tracer tracer) {
@@ -25,7 +27,7 @@ public class RequestHandler {
 
     // we cannot use active span because we don't know in which thread it is executed
     // and we cannot therefore activate span. thread can come from common thread pool.
-    Span span = tracer.buildSpan("send")
+    Span span = tracer.buildSpan(OPERATION_NAME)
         .ignoreActiveSpan()
         .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT)
         .startManual();

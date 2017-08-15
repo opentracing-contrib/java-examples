@@ -2,7 +2,7 @@ package io.opentracing.contrib.examples.activate_deactivate;
 
 import io.opentracing.ActiveSpan;
 import io.opentracing.ActiveSpan.Continuation;
-import io.opentracing.tag.Tags;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +22,10 @@ public class Callback implements Runnable {
     logger.info("Callback created");
   }
 
+  /**
+   * Can be used continuation.activate().deactivate() chain only. It is splitted for testing
+   * purposes (span should not be finished before deactivate() called here).
+   */
   @Override
   public void run() {
     logger.info("Callback started");
@@ -33,8 +37,9 @@ public class Callback implements Runnable {
       e.printStackTrace();
     }
 
-    activeSpan
-        .setTag(Tags.HTTP_STATUS.getKey(), 200); // we need it to test that finished span has it
+    // set random tag starting with 'test_tag_' to test that finished span has all of them
+    activeSpan.setTag("test_tag_" + new Random().nextInt(), "random");
+
     activeSpan.deactivate();
     logger.info("Callback finished");
   }

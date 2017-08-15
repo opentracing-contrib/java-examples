@@ -20,10 +20,9 @@ public class Server extends Thread {
 
   private void process(Message message) {
     SpanContext context = tracer.extract(Builtin.TEXT_MAP, new TextMapExtractAdapter(message));
-    ActiveSpan activeSpan = tracer.buildSpan("receive").asChildOf(context).startActive();
-    activeSpan.setTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER);
-
-    activeSpan.deactivate();
+    try (ActiveSpan activeSpan = tracer.buildSpan("receive").asChildOf(context).startActive()) {
+      activeSpan.setTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER);
+    }
   }
 
   @Override

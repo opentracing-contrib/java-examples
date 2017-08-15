@@ -40,7 +40,7 @@ public class TestClientServer {
   }
 
   @Test
-  public void test() {
+  public void test() throws Exception {
     Client client = new Client(queue, tracer);
     client.send();
 
