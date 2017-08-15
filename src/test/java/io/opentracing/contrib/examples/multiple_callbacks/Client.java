@@ -27,7 +27,7 @@ public class Client {
     executor.submit(new Callable<Object>() {
       @Override
       public Object call() throws Exception {
-        logger.info("Child thread with message '" + message + "' started");
+        logger.info("Child thread with message '{}' started", message);
 
         try (ActiveSpan parentSpan = cont.activate()) {
           try (ActiveSpan span = tracer.buildSpan("subtask").startActive()) {
@@ -36,7 +36,7 @@ public class Client {
           }
         }
 
-        logger.info("Child thread with message '" + message + "' finished");
+        logger.info("Child thread with message '{}' finished", message);
         return message + "::response";
       }
     });
