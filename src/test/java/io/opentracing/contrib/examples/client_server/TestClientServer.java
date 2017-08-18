@@ -1,7 +1,7 @@
 package io.opentracing.contrib.examples.client_server;
 
 import static com.jayway.awaitility.Awaitility.await;
-import static io.opentracing.contrib.examples.TestUtils.getByTag;
+import static io.opentracing.contrib.examples.TestUtils.getOneByTag;
 import static io.opentracing.contrib.examples.TestUtils.reportedSpansSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -49,8 +49,8 @@ public class TestClientServer {
     List<MockSpan> finished = tracer.finishedSpans();
     assertEquals(2, finished.size());
     assertEquals(finished.get(0).context().traceId(), finished.get(1).context().traceId());
-    assertNotNull(getByTag(finished, Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT));
-    assertNotNull(getByTag(finished, Tags.SPAN_KIND, Tags.SPAN_KIND_SERVER));
+    assertNotNull(getOneByTag(finished, Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT));
+    assertNotNull(getOneByTag(finished, Tags.SPAN_KIND, Tags.SPAN_KIND_SERVER));
     assertNull(tracer.activeSpan());
   }
 }

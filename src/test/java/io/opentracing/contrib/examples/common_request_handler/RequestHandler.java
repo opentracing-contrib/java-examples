@@ -1,7 +1,9 @@
 package io.opentracing.contrib.examples.common_request_handler;
 
 import io.opentracing.Span;
+import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
+import io.opentracing.Tracer.SpanBuilder;
 import io.opentracing.tag.Tags;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,8 +20,15 @@ public class RequestHandler {
 
   private final Tracer tracer;
 
+  private final SpanContext parentContext;
+
   public RequestHandler(Tracer tracer) {
+    this(tracer, null);
+  }
+
+  public RequestHandler(Tracer tracer, SpanContext parentContext) {
     this.tracer = tracer;
+    this.parentContext = parentContext;
   }
 
   public void beforeRequest(Object request, Context context) {
@@ -27,12 +36,15 @@ public class RequestHandler {
 
     // we cannot use active span because we don't know in which thread it is executed
     // and we cannot therefore activate span. thread can come from common thread pool.
-    Span span = tracer.buildSpan(OPERATION_NAME)
+    SpanBuilder spanBuilder = tracer.buildSpan(OPERATION_NAME)
         .ignoreActiveSpan()
-        .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT)
-        .startManual();
+        .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT);
 
-    context.put("span", span);
+    if (parentContext != null) {
+      spanBuilder.asChildOf(parentContext);
+    }
+
+    context.put("span", spanBuilder.startManual());
   }
 
   public void afterResponse(Object response, Context context) {

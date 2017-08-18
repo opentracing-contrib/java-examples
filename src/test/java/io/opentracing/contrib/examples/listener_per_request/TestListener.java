@@ -1,6 +1,6 @@
 package io.opentracing.contrib.examples.listener_per_request;
 
-import static io.opentracing.contrib.examples.TestUtils.getByTag;
+import static io.opentracing.contrib.examples.TestUtils.getOneByTag;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -29,7 +29,7 @@ public class TestListener {
 
     List<MockSpan> finished = tracer.finishedSpans();
     assertEquals(1, finished.size());
-    assertNotNull(getByTag(finished, Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT));
+    assertNotNull(getOneByTag(finished, Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT));
     assertNull(tracer.activeSpan());
   }
 }
