@@ -2,6 +2,7 @@ package io.opentracing.contrib.examples.late_span_finish;
 
 import static io.opentracing.contrib.examples.TestUtils.sleep;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import io.opentracing.ActiveSpan;
 import io.opentracing.Span;
@@ -45,11 +46,13 @@ public class TestLateSpanFinish {
       assertEquals(spans.get(2).context().traceId(), spans.get(i).context().traceId());
       assertEquals(spans.get(2).context().spanId(), spans.get(i).parentId());
     }
+
+    assertNull(tracer.activeSpan());
   }
 
   /* Fire away a few subtasks, passing a parent Span whose lifetime
    * is not tied at-all to the children */
-  void submitTasks(final Span parentSpan) {
+  private void submitTasks(final Span parentSpan) {
 
     executor.submit(new Runnable() {
       @Override

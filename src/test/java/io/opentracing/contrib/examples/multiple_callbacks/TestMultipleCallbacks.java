@@ -4,6 +4,7 @@ import static com.jayway.awaitility.Awaitility.await;
 import static io.opentracing.contrib.examples.TestUtils.reportedSpansSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import io.opentracing.ActiveSpan;
 import io.opentracing.mock.MockSpan;
@@ -40,5 +41,7 @@ public class TestMultipleCallbacks {
       assertEquals(parentSpan.context().traceId(), spans.get(i).context().traceId());
       assertEquals(parentSpan.context().spanId(), spans.get(i).parentId());
     }
+
+    assertNull(tracer.activeSpan());
   }
 }

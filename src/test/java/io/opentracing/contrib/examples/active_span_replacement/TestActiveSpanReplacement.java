@@ -6,6 +6,7 @@ import static io.opentracing.contrib.examples.TestUtils.sleep;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
 
 import io.opentracing.ActiveSpan;
 import io.opentracing.mock.MockSpan;
@@ -48,9 +49,11 @@ public class TestActiveSpanReplacement {
     /* initial task is not related in any way to those two tasks */
     assertNotEquals(spans.get(0).context().traceId(), spans.get(1).context().traceId());
     assertEquals(0, spans.get(0).parentId());
+
+    assertNull(tracer.activeSpan());
   }
 
-  void submitAnotherTask(ActiveSpan span) {
+  private void submitAnotherTask(ActiveSpan span) {
     final ActiveSpan.Continuation cont = span.capture();
 
     executor.submit(new Runnable() {
