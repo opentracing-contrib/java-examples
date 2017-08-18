@@ -15,6 +15,8 @@ public class Callback implements Runnable {
 
   private static final Logger logger = LoggerFactory.getLogger(Callback.class);
 
+  private final Random random = new Random();
+
   private final Continuation continuation;
 
   Callback(ActiveSpan activeSpan) {
@@ -38,7 +40,7 @@ public class Callback implements Runnable {
     }
 
     // set random tag starting with 'test_tag_' to test that finished span has all of them
-    activeSpan.setTag("test_tag_" + new Random().nextInt(), "random");
+    activeSpan.setTag("test_tag_" + random.nextInt(), "random");
 
     activeSpan.deactivate();
     logger.info("Callback finished");
