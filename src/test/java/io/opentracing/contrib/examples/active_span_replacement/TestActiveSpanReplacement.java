@@ -8,30 +8,37 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 
-import io.opentracing.ActiveSpan;
+import io.opentracing.Scope;
+import io.opentracing.Scope.Observer;
+import io.opentracing.Span;
 import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
 import io.opentracing.mock.MockTracer.Propagator;
-import io.opentracing.util.ThreadLocalActiveSpanSource;
+import io.opentracing.util.ThreadLocalScopeManager;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestActiveSpanReplacement {
 
-  private final MockTracer tracer = new MockTracer(new ThreadLocalActiveSpanSource(),
-      Propagator.TEXT_MAP);
+  private final MockTracer tracer = new MockTracer(Propagator.TEXT_MAP);
 
   private final ExecutorService executor = Executors.newCachedThreadPool();
 
+  @Before
+  public void before() {
+    tracer.reset();
+    tracer.setScopeManager(new ThreadLocalScopeManager());
+  }
+
   @Test
   public void test() throws Exception {
-    /* Start an isolated task and query for its result in another task/thread */
-    try (ActiveSpan span = tracer.buildSpan("initial").startActive()) {
-      submitAnotherTask(span);
-    }
+    /* Start an isolated task and query for its result -and finish it- in another task/thread */
+    Span span = tracer.buildSpan("initial").startManual();
+    submitAnotherTask(span);
 
     await().atMost(15, TimeUnit.SECONDS).until(reportedSpansSize(tracer), equalTo(3));
 
@@ -50,25 +57,24 @@ public class TestActiveSpanReplacement {
     assertNotEquals(spans.get(0).context().traceId(), spans.get(1).context().traceId());
     assertEquals(0, spans.get(0).parentId());
 
-    assertNull(tracer.activeSpan());
+    assertNull(tracer.scopeManager().active());
   }
 
-  private void submitAnotherTask(ActiveSpan span) {
-    final ActiveSpan.Continuation cont = span.capture();
+  private void submitAnotherTask(final Span span) {
 
     executor.submit(new Runnable() {
       @Override
       public void run () {
         /* Create a new Span for this task */
-        try (ActiveSpan taskSpan = tracer.buildSpan("task").startActive()) {
+        try (Scope taskSpan = tracer.buildSpan("task").startActive(Observer.FINISH_ON_CLOSE)) {
 
           /* Simulate work strictly related to the initial Span. */
-          try (ActiveSpan initialSpan = cont.activate()) {
+          try (Scope initialSpan = span.activate(Observer.FINISH_ON_CLOSE)) {
             sleep(50);
           }
 
           /* Restore the span for this task and create a subspan */
-          try (ActiveSpan subTask = tracer.buildSpan("subtask").startActive()) {
+          try (Scope subTask = tracer.buildSpan("subtask").startActive(Observer.FINISH_ON_CLOSE)) {
           }
         }
       }

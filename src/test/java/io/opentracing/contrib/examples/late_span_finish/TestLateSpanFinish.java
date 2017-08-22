@@ -4,23 +4,30 @@ import static io.opentracing.contrib.examples.TestUtils.sleep;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-import io.opentracing.ActiveSpan;
+import io.opentracing.Scope;
+import io.opentracing.Scope.Observer;
 import io.opentracing.Span;
 import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
 import io.opentracing.mock.MockTracer.Propagator;
-import io.opentracing.util.ThreadLocalActiveSpanSource;
+import io.opentracing.util.ThreadLocalScopeManager;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestLateSpanFinish {
 
-  private final MockTracer tracer = new MockTracer(new ThreadLocalActiveSpanSource(),
-      Propagator.TEXT_MAP);
+  private final MockTracer tracer = new MockTracer(Propagator.TEXT_MAP);
   private final ExecutorService executor = Executors.newCachedThreadPool();
+
+  @Before
+  public void before() {
+    tracer.reset();
+    tracer.setScopeManager(new ThreadLocalScopeManager());
+  }
 
   @Test
   public void test() throws Exception {
@@ -47,7 +54,7 @@ public class TestLateSpanFinish {
       assertEquals(spans.get(2).context().spanId(), spans.get(i).parentId());
     }
 
-    assertNull(tracer.activeSpan());
+    assertNull(tracer.scopeManager().active());
   }
 
   /* Fire away a few subtasks, passing a parent Span whose lifetime
@@ -58,11 +65,10 @@ public class TestLateSpanFinish {
       @Override
       public void run() {
         // Alternative to calling makeActive() is to pass it manually to asChildOf() for each created Span.
-        try (ActiveSpan span = tracer.makeActive(parentSpan)) {
-          try (ActiveSpan childSpan1 = tracer.buildSpan("task1").startActive()) {
+        try (Scope span = parentSpan.activate()) {
+          try (Scope childSpan1 = tracer.buildSpan("task1").startActive(Observer.FINISH_ON_CLOSE)) {
             sleep(55);
           }
-          span.capture(); // Workaround, prevent parentSpan from being finished here.
         }
       }
     });
@@ -70,11 +76,10 @@ public class TestLateSpanFinish {
     executor.submit(new Runnable() {
       @Override
       public void run() {
-        try (ActiveSpan span = tracer.makeActive(parentSpan)) {
-          try (ActiveSpan childSpan1 = tracer.buildSpan("task2").startActive()) {
+        try (Scope span = parentSpan.activate()) {
+          try (Scope childSpan1 = tracer.buildSpan("task2").startActive(Observer.FINISH_ON_CLOSE)) {
             sleep(85);
           }
-          span.capture(); // Workaround, prevent parentSpan from being finished here.
         }
       }
     });

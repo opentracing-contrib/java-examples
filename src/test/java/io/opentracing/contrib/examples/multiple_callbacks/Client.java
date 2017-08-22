@@ -2,8 +2,10 @@ package io.opentracing.contrib.examples.multiple_callbacks;
 
 import static io.opentracing.contrib.examples.TestUtils.sleep;
 
-import io.opentracing.ActiveSpan;
+import io.opentracing.Scope;
+import io.opentracing.Span;
 import io.opentracing.Tracer;
+import io.opentracing.usecases.AutoFinishScopeManager.AutoFinishScope;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,15 +24,16 @@ public class Client {
     this.tracer = tracer;
   }
 
-  public Future<Object> send(final Object message, ActiveSpan parentSpan, final long milliseconds) {
-    final ActiveSpan.Continuation cont = parentSpan.capture();
+  public Future<Object> send(final Object message, final Scope parentScope, final long milliseconds) {
+    final AutoFinishScope.Continuation cont = ((AutoFinishScope)parentScope).defer();
+
     return executor.submit(new Callable<Object>() {
       @Override
       public Object call() throws Exception {
         logger.info("Child thread with message '{}' started", message);
 
-        try (ActiveSpan parentSpan = cont.activate()) {
-          try (ActiveSpan span = tracer.buildSpan("subtask").startActive()) {
+        try (Scope parentScope = cont.activate()) {
+          try (Scope scope = tracer.buildSpan("subtask").startActive()) {
             // Simulate work.
             sleep(milliseconds);
           }

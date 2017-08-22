@@ -6,30 +6,37 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-import io.opentracing.ActiveSpan;
+import io.opentracing.Scope;
+import io.opentracing.Scope.Observer;
+import io.opentracing.Span;
 import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
 import io.opentracing.mock.MockTracer.Propagator;
-import io.opentracing.util.ThreadLocalActiveSpanSource;
+import io.opentracing.util.ThreadLocalScopeManager;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestNestedCallbacks {
 
-  private final MockTracer tracer = new MockTracer(new ThreadLocalActiveSpanSource(),
-      Propagator.TEXT_MAP);
+  private final MockTracer tracer = new MockTracer(Propagator.TEXT_MAP);
   private final ExecutorService executor = Executors.newCachedThreadPool();
+
+  @Before
+  public void before() {
+    tracer.reset();
+    tracer.setScopeManager(new ThreadLocalScopeManager());
+  }
 
   @Test
   public void test() throws Exception {
-
-    try (ActiveSpan span = tracer.buildSpan("one").startActive()) {
-      submitCallbacks(span);
-    }
+    /* Start a Span and let the callback-chain
+     * finish it when the task is done */
+    submitCallbacks(tracer.buildSpan("one").startManual());
 
     await().atMost(15, TimeUnit.SECONDS).until(reportedSpansSize(tracer), equalTo(1));
 
@@ -43,30 +50,28 @@ public class TestNestedCallbacks {
       assertEquals(Integer.toString(i), tags.get("key" + i));
     }
 
-    assertNull(tracer.activeSpan());
+    assertNull(tracer.scopeManager().active());
   }
 
-  private void submitCallbacks(ActiveSpan span) {
-    final ActiveSpan.Continuation cont = span.capture();
+  private void submitCallbacks(final Span span) {
 
     executor.submit(new Runnable() {
       @Override
       public void run() {
-        try (ActiveSpan span = cont.activate()) {
+        try (Scope scope = span.activate()) {
           span.setTag("key1", "1");
-          final ActiveSpan.Continuation cont = span.capture();
 
           executor.submit(new Runnable() {
             @Override
             public void run() {
-              try (ActiveSpan span = cont.activate()) {
+              try (Scope scope = span.activate()) {
                 span.setTag("key2", "2");
-                final ActiveSpan.Continuation cont = span.capture();
 
                 executor.submit(new Runnable() {
                   @Override
                   public void run() {
-                    try (ActiveSpan span = cont.activate()) {
+                    /* Decide explicitly when to finish the Span */
+                    try (Scope scope = span.activate(Observer.FINISH_ON_CLOSE)) {
                       span.setTag("key3", "3");
                     }
                   }

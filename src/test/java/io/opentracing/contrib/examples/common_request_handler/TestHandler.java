@@ -6,12 +6,13 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
-import io.opentracing.ActiveSpan;
+import io.opentracing.Scope;
+import io.opentracing.Scope.Observer;
 import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
 import io.opentracing.mock.MockTracer.Propagator;
 import io.opentracing.tag.Tags;
-import io.opentracing.util.ThreadLocalActiveSpanSource;
+import io.opentracing.util.ThreadLocalScopeManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -26,13 +27,13 @@ import org.junit.Test;
  */
 public class TestHandler {
 
-  private final MockTracer tracer = new MockTracer(new ThreadLocalActiveSpanSource(),
-      Propagator.TEXT_MAP);
+  private final MockTracer tracer = new MockTracer(Propagator.TEXT_MAP);
   private final Client client = new Client(new RequestHandler(tracer));
 
   @Before
   public void before() {
     tracer.reset();
+    tracer.setScopeManager(new ThreadLocalScopeManager());
   }
 
   @Test
@@ -53,7 +54,7 @@ public class TestHandler {
     assertNotEquals(finished.get(0).context().traceId(), finished.get(1).context().traceId());
     assertEquals(finished.get(0).parentId(), finished.get(1).parentId());
 
-    assertNull(tracer.activeSpan());
+    assertNull(tracer.scopeManager().active());
   }
 
   /**
@@ -61,7 +62,7 @@ public class TestHandler {
    */
   @Test
   public void parent_not_picked_up() throws Exception {
-    try (ActiveSpan parent = tracer.buildSpan("parent").startActive()) {
+    try (Scope parent = tracer.buildSpan("parent").startActive(Observer.FINISH_ON_CLOSE)) {
       Object response = client.send("no_parent").get(15, TimeUnit.SECONDS);
       assertEquals("no_parent:response", response);
     }
@@ -86,8 +87,8 @@ public class TestHandler {
   @Test
   public void bad_solution_to_set_parent() throws Exception {
     Client client;
-    try (ActiveSpan parent = tracer.buildSpan("parent").startActive()) {
-      client = new Client(new RequestHandler(tracer, parent.context()));
+    try (Scope parent = tracer.buildSpan("parent").startActive(Observer.FINISH_ON_CLOSE)) {
+      client = new Client(new RequestHandler(tracer, parent.span().context()));
       Object response = client.send("correct_parent").get(15, TimeUnit.SECONDS);
       assertEquals("correct_parent:response", response);
     }

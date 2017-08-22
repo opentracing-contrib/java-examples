@@ -6,27 +6,28 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-import io.opentracing.ActiveSpan;
+import io.opentracing.Scope;
 import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
 import io.opentracing.mock.MockTracer.Propagator;
-import io.opentracing.util.ThreadLocalActiveSpanSource;
+import io.opentracing.usecases.AutoFinishScopeManager;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 public class TestMultipleCallbacks {
 
-  private final MockTracer tracer = new MockTracer(new ThreadLocalActiveSpanSource(),
-      Propagator.TEXT_MAP);
+  private final MockTracer tracer = new MockTracer(Propagator.TEXT_MAP);
 
   @Test
   public void test() throws Exception {
+    tracer.setScopeManager(new AutoFinishScopeManager());
+
     Client client = new Client(tracer);
-    try (ActiveSpan span = tracer.buildSpan("parent").startActive()) {
-      client.send("task1", span, 300);
-      client.send("task2", span, 200);
-      client.send("task3", span, 100);
+    try (Scope scope = tracer.buildSpan("parent").startActive()) {
+      client.send("task1", scope, 300);
+      client.send("task2", scope, 200);
+      client.send("task3", scope, 100);
     }
 
     await().atMost(15, TimeUnit.SECONDS).until(reportedSpansSize(tracer), equalTo(4));
@@ -42,6 +43,6 @@ public class TestMultipleCallbacks {
       assertEquals(parentSpan.context().spanId(), spans.get(i).parentId());
     }
 
-    assertNull(tracer.activeSpan());
+    assertNull(tracer.scopeManager().active());
   }
 }
