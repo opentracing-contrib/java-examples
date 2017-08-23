@@ -9,7 +9,7 @@ tester examples of common instrumentation patterns
 
 ## Testing against a Java Opentracing  PR/branch.
 
-In order to test these examples against https://github.com/bhs/opentracing-java/pull/5, you have to install it first in the local Maven repository:
+In order to test these examples against https://github.com/bhs/opentracing-java/pull/5, you have to fetch the PR locally, and then install it in local Maven repository (required once only):
 
     $ cd opentracing_java/
     $ git remote add bhs https://github.com/bhs/opentracing-java
@@ -35,3 +35,5 @@ Next, look for the `<properties>` section in the `pom.xml` file under this direc
 Finally, run (under this directory as well):
 
     $ mvn test
+
+Any further changes under this repository will not need re-installing anything, simply re-running this last command.
