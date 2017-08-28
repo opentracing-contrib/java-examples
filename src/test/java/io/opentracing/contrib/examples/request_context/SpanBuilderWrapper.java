@@ -15,8 +15,8 @@ import static io.opentracing.contrib.examples.request_context.CustomActiveSpanSo
  * Note2 - startActive starts a span but returns active span. We assume that the wrapped SpanBuilder will call
  * startManual first (so that we can wrap the span) and then makeActive()
  * <p>
- * Note3 - unfortunately we can't wrap startManual properly as the wrapped tracer calls it's own (not wrapped) startManual. Which sucks.
- * That's why one test does not pass.
+ * Note3 - unfortunately we can't wrap startManual properly as the wrapped tracer calls it's own (not wrapped) startManual.
+ * That's why startActive has this weird code.
  */
 public class SpanBuilderWrapper implements Tracer.SpanBuilder {
     private final Tracer.SpanBuilder wrapped;
