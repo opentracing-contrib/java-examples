@@ -5,6 +5,7 @@ import static io.opentracing.contrib.examples.TestUtils.reportedSpansSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 
+import io.opentracing.ContinuableScope;
 import io.opentracing.Scope;
 import io.opentracing.Scope.Observer;
 import io.opentracing.mock.MockSpan;
@@ -87,7 +88,7 @@ public class TestCallback {
       public void run() {
         logger.info("Entry thread started");
 
-        try (Scope scope = tracer.buildSpan("parent").startActive()) {
+        try (ContinuableScope scope = (ContinuableScope)tracer.buildSpan("parent").startActive()) {
           Runnable callback = new Callback(scope);
 
           // Callback is executed at some unpredictable time and we are not able to check status of the callback
@@ -107,7 +108,7 @@ public class TestCallback {
       @Override
       public void run() {
         logger.info("Entry thread 2x started");
-        try (Scope scope = tracer.buildSpan("parent").startActive()) {
+        try (ContinuableScope scope = (ContinuableScope)tracer.buildSpan("parent").startActive()) {
           Runnable callback = new Callback(scope);
           Runnable callback2 = new Callback(scope);
 

@@ -2,6 +2,7 @@ package io.opentracing.contrib.examples.multiple_callbacks;
 
 import static io.opentracing.contrib.examples.TestUtils.sleep;
 
+import io.opentracing.ContinuableScope;
 import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
@@ -24,8 +25,8 @@ public class Client {
     this.tracer = tracer;
   }
 
-  public Future<Object> send(final Object message, final Scope parentScope, final long milliseconds) {
-    final AutoFinishScope.Continuation cont = ((AutoFinishScope)parentScope).defer();
+  public Future<Object> send(final Object message, final ContinuableScope parentScope, final long milliseconds) {
+    final ContinuableScope.Continuation cont = parentScope.defer();
 
     return executor.submit(new Callable<Object>() {
       @Override

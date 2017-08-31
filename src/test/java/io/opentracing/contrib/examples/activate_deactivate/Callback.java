@@ -1,5 +1,6 @@
 package io.opentracing.contrib.examples.activate_deactivate;
 
+import io.opentracing.ContinuableScope;
 import io.opentracing.Scope;
 import io.opentracing.usecases.AutoFinishScopeManager;
 import io.opentracing.usecases.AutoFinishScopeManager.AutoFinishScope;
@@ -19,10 +20,10 @@ public class Callback implements Runnable {
 
   private final Random random = new Random();
 
-  private final AutoFinishScope.Continuation continuation;
+  private final ContinuableScope.Continuation continuation;
 
-  Callback(Scope activeSpan) {
-    continuation = ((AutoFinishScope)activeSpan).defer();
+  Callback(ContinuableScope activeSpan) {
+    continuation = activeSpan.defer();
     logger.info("Callback created");
   }
 

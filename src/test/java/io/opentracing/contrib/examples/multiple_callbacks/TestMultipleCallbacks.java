@@ -6,6 +6,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+import io.opentracing.ContinuableScope;
 import io.opentracing.Scope;
 import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
@@ -24,7 +25,7 @@ public class TestMultipleCallbacks {
     tracer.setScopeManager(new AutoFinishScopeManager());
 
     Client client = new Client(tracer);
-    try (Scope scope = tracer.buildSpan("parent").startActive()) {
+    try (ContinuableScope scope = (ContinuableScope)tracer.buildSpan("parent").startActive()) {
       client.send("task1", scope, 300);
       client.send("task2", scope, 200);
       client.send("task3", scope, 100);
